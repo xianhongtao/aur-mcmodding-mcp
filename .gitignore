@@ -1,0 +1,20 @@
+# Local build, verification and delivery data
+/artifacts/
+/local/
+/src/
+/pkg/
+/*.pkg.tar.*
+/*.src.tar.*
+/*.log
+/namcap-report.txt
+/validation-report.txt
+# Downloaded sources; keep xdg-cache.patch tracked.
+/mcmodding-mcp-*.tar.gz
+/pnpm-*.tgz
+/onnxruntime-*-LICENSE
+/onnxruntime-*-ThirdPartyNotices.txt
+__pycache__/
+*.pyc
+
+# Keep repository maintenance instructions even with global ignore rules.
+!/AGENTS.md
