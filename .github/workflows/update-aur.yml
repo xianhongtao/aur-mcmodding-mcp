@@ -1,0 +1,121 @@
+name: Update mcmodding-mcp AUR package
+
+on:
+  schedule:
+    # 02:23, 08:23, 14:23, 20:23 Asia/Shanghai (UTC+8)
+    - cron: '23 0,6,12,18 * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - PKGBUILD
+      - .SRCINFO
+      - xdg-cache.patch
+      - smoke-test.py
+      - scripts/**
+      - tests/**
+      - .github/workflows/update-aur.yml
+
+concurrency:
+  group: mcmodding-mcp-aur-publish
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    container: archlinux:latest
+    outputs:
+      source_commit: ${{ steps.validate.outputs.source_commit }}
+    steps:
+      # git must exist before checkout, otherwise checkout may use a tarball without .git.
+      - name: Install validation and build tools
+        run: pacman -Syu --noconfirm --needed base-devel git python curl nodejs node-gyp pkgconf libvips namcap
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Verify upstream and build as an ordinary user
+        id: validate
+        run: |
+          echo "source_commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          useradd -m builder
+          chown -R builder:builder "$GITHUB_WORKSPACE"
+          runuser -u builder -- bash -euo pipefail -c '
+            mkdir -p local/ci
+            PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -v 2>&1 | tee local/ci/tests.log
+            python scripts/update-upstream.py 2>&1 | tee local/ci/upstream.log
+            python scripts/validation.py metadata
+            makepkg --verifysource -f 2>&1 | tee local/ci/sources.log
+            makepkg -f --noconfirm 2>&1 | tee local/ci/build.log
+          '
+      - name: Install x86_64 package and test offline MCP
+        run: |
+          mapfile -t packages < <(find . -maxdepth 1 -name 'mcmodding-mcp-*.pkg.tar.zst' -type f)
+          test "${#packages[@]}" -eq 1
+          pacman -U --noconfirm "${packages[0]}" 2>&1 | tee local/ci/install.log
+          runuser -u builder -- bash -euo pipefail -c '
+            python smoke-test.py 2>&1 | tee local/ci/smoke.log
+          '
+          namcap PKGBUILD "${packages[0]}" 2>&1 | tee local/ci/namcap.log
+          python scripts/validation.py namcap local/ci/namcap.log
+          runuser -u builder -- python scripts/validation.py create-manifest validation-manifest.json
+      - name: Save validation logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: validation-logs
+          path: local/ci/*.log
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Save the validated recipe and provenance
+        uses: actions/upload-artifact@v7
+        with:
+          name: validated-aur-recipe
+          path: |
+            PKGBUILD
+            .SRCINFO
+            xdg-cache.patch
+            validation-manifest.json
+          include-hidden-files: true
+          if-no-files-found: error
+
+  publish:
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container: archlinux:latest
+    permissions:
+      contents: write
+    env:
+      VALIDATED_COMMIT: ${{ needs.validate.outputs.source_commit }}
+      AUR_SSH_PRIVATE_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+      AUR_USERNAME: ${{ vars.AUR_USERNAME }}
+      AUR_EMAIL: ${{ vars.AUR_EMAIL }}
+    steps:
+      - name: Install publication tools before checkout
+        run: pacman -Syu --noconfirm --needed base-devel git openssh python
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.validate.outputs.source_commit }}
+          fetch-depth: 0
+      - uses: actions/download-artifact@v8
+        with:
+          name: validated-aur-recipe
+          path: .
+      - name: Commit the validated recipe and synchronize AUR
+        run: |
+          useradd -m builder
+          chown -R builder:builder "$GITHUB_WORKSPACE"
+          # Expansion intentionally happens inside the builder's shell.
+          # shellcheck disable=SC2016
+          runuser -u builder -- bash -euo pipefail -c '
+            git switch -C main "$VALIDATED_COMMIT"
+            bash scripts/publish-aur.sh
+          '

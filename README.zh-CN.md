@@ -1,6 +1,6 @@
 # mcmodding-mcp：Arch / AUR 打包交付
 
-> 本文主体记录 2026-09-16 的构建与安装，非 2026-09-23 重测结果。当前仓库布局和 GitHub/AUR 工作流见 [README.md](README.md)，本次验证见 [docs/validation-2026-09-23.md](docs/validation-2026-09-23.md)。旧日志在 `local/logs/2026-09-16/`，旧报告在 `docs/history/2026-09-16/`。此前提及的 `../aur-submit` 在本次检查时不存在，需按首页重新克隆。
+> 本文主体记录 2026-09-16 的构建与安装。当前仓库布局、自动更新和 GitHub/AUR 工作流见 [README.md](README.md)，自动化验证见 [docs/validation-2026-10-04.md](docs/validation-2026-10-04.md)，上次整理验证见 [docs/validation-2026-09-23.md](docs/validation-2026-09-23.md)。旧日志在 `local/logs/2026-09-16/`，旧报告在 `docs/history/2026-09-16/`。历史结果不代表本次重测；独立 AUR 检出按首页说明准备。
 
 核对日期：2026-09-16。包名 `mcmodding-mcp`，版本 `0.5.0-1`，架构 `x86_64`。
 
@@ -86,12 +86,12 @@ namcap 的剩余警告包括上游预编译库缺少部分 ELF 加固、`!strip`
 ```sh
 sudo pacman -S --needed base-devel nodejs node-gyp python pkgconf libvips
 makepkg --verifysource
-makepkg -s
+makepkg -f
 sudo pacman -U ./mcmodding-mcp-0.5.0-1-x86_64.pkg.tar.zst
 mcmodding-mcp manage
 ```
 
-已存在成品而需要重建时使用 `makepkg -fs`。测试脚本在本目录根部，安装后可执行 `python ./smoke-test.py`。随附的已构建安装包位于 `artifacts/`，上面的安装命令针对在本目录重新构建的包。
+已存在成品而需要重建时使用 `makepkg -f`。测试脚本在本目录根部，安装后可执行 `python ./smoke-test.py`。随附的已构建安装包位于 `artifacts/`，上面的安装命令针对在本目录重新构建的包。
 
 CLI 只特判 `manage`，没有正常实现 `--help`、`--version` 或 `serve --mcp`，不要用这些参数判断安装成功。常见 MCP 客户端的 JSON 配置为：
 

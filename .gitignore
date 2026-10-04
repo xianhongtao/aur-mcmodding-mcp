@@ -8,6 +8,7 @@
 /*.log
 /namcap-report.txt
 /validation-report.txt
+/validation-manifest.json
 # Downloaded sources; keep xdg-cache.patch tracked.
 /mcmodding-mcp-*.tar.gz
 /pnpm-*.tgz
