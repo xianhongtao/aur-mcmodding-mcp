@@ -59,8 +59,9 @@ git add PKGBUILD .SRCINFO xdg-cache.patch
 repo_version=$(python scripts/validation.py version)
 if ! git diff --cached --quiet; then
   git commit -m "Update mcmodding-mcp to $repo_version"
-  git push origin HEAD:main
 fi
+# A no-op push also verifies GitHub write authentication before touching AUR.
+git push origin HEAD:main
 
 git clone --branch master ssh://aur@aur.archlinux.org/mcmodding-mcp.git "$work/aur"
 aur_version=$(awk '$1 == "epoch" && $2 == "=" {e=$3} $1 == "pkgver" && $2 == "=" {v=$3} $1 == "pkgrel" && $2 == "=" {r=$3} END {print (e == "" ? "" : e ":") v "-" r}' "$work/aur/.SRCINFO")

@@ -44,9 +44,11 @@ jobs:
       - name: Verify upstream and build as an ordinary user
         id: validate
         run: |
-          echo "source_commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           useradd -m builder
           chown -R builder:builder "$GITHUB_WORKSPACE"
+          source_commit=$(runuser -u builder -- git rev-parse HEAD)
+          test "$source_commit" = "$GITHUB_SHA"
+          echo "source_commit=$source_commit" >> "$GITHUB_OUTPUT"
           runuser -u builder -- bash -euo pipefail -c '
             mkdir -p local/ci
             PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -v 2>&1 | tee local/ci/tests.log
@@ -105,14 +107,22 @@ jobs:
         with:
           ref: ${{ needs.validate.outputs.source_commit }}
           fetch-depth: 0
+          persist-credentials: false
       - uses: actions/download-artifact@v8
         with:
           name: validated-aur-recipe
           path: .
       - name: Commit the validated recipe and synchronize AUR
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           useradd -m builder
           chown -R builder:builder "$GITHUB_WORKSPACE"
+          # Process-scoped authentication also works after switching to builder.
+          export GIT_CONFIG_COUNT=1
+          export GIT_CONFIG_KEY_0=http.https://github.com/.extraheader
+          GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w 0)"
+          export GIT_CONFIG_VALUE_0
           # Expansion intentionally happens inside the builder's shell.
           # shellcheck disable=SC2016
           runuser -u builder -- bash -euo pipefail -c '

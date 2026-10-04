@@ -63,6 +63,10 @@ fi
 exec {PYTHON} "$@"
 ''')
         self.wrapper("git", f'''#!/bin/sh
+if [ "$1" = push ] && [ "$TEST_FAIL_GITHUB_PUSH" = 1 ]; then
+  echo "TEST GITHUB PUSH FAILURE" >&2
+  exit 1
+fi
 if [ "$1" = -C ] && [ "$3" = push ] && [ "$TEST_FAIL_AUR_PUSH" = 1 ]; then
   echo "TEST AUR PUSH FAILURE" >&2
   exit 1
@@ -119,6 +123,17 @@ exec {GIT} "$@"
         self.assertEqual(set(self.git(self.aur, "ls-tree", "--name-only", "master").splitlines()), set(validation.FILES))
         for name in validation.FILES:
             self.assertEqual(self.git(self.aur, "show", "master:" + name), (self.root / name).read_text().strip())
+
+    def test_github_push_failure_stops_before_aur(self):
+        aur_head = self.git(self.aur, "rev-parse", "master")
+        for updated in (False, True):
+            with self.subTest(updated=updated):
+                if updated:
+                    self.candidate()
+                result = self.publish(TEST_FAIL_GITHUB_PUSH="1")
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("TEST GITHUB PUSH FAILURE", result.stderr)
+                self.assertEqual(self.git(self.aur, "rev-parse", "master"), aur_head)
 
     def test_github_success_aur_failure_is_retried_without_second_github_commit(self):
         self.candidate()
