@@ -32,7 +32,10 @@
 - 首次 publish 失败：root 读取 HEAD 时触发 Git 属主检查，echo 内的命令替换失败未阻止步骤，导致 source_commit 为空。已改为 chown 后由 builder 读取，独立赋值并与 GITHUB_SHA 核对；同时发布凭据改为仅发布步骤的进程环境，避免 checkout 的 root 凭据文件阻碍普通用户推送。
 - 发布脚本对无改动配方也执行 GitHub 非强制 no-op push，核验写认证后才同步 AUR；不产生无意义提交。
 - 修复后本地 29 项测试全部通过，actionlint、ShellCheck 与 git diff --check 通过。
-- 用户已通过 Run workflow 触发 [手动运行 37206632521](https://github.com/xianhongtao/aur-mcmodding-mcp/actions/runs/37206632521)，它使用修复前提交；修复后的真实发布结果待补充。
+- 用户已通过 Run workflow 触发 [手动运行 37206632521](https://github.com/xianhongtao/aur-mcmodding-mcp/actions/runs/37206632521)：手动入口确认可触发；该次使用修复前提交，validate 成功，publish 同样因空 SHA 失败。
+- 修复提交 `df483def3b12cd77a787e1a38eadbfedae1796d6` 已签名推送；[修复后的运行 37206780155](https://github.com/xianhongtao/aur-mcmodding-mcp/actions/runs/37206780155) validate、publish 全部成功。29 项测试、源码校验、完整构建、原生模块检查、容器安装、离线 MCP 握手和 namcap 均通过；namcap 仍为 0 错误、33 警告。
+- publish 校验的 source_commit 与 manifest 为 `df483def3b12cd77a787e1a38eadbfedae1796d6`；GitHub main 检查及已认证 no-op push 成功。使用 Actions 的 AUR 密钥通过严格主机校验完成独立 SSH 检出，远程提交与三个文件一致；RPC 第 1/30 次即返回 0.5.0-1。
+- 当前无新稳定版，实际运行未新增 GitHub 配方提交或 AUR 提交；升级写入、AUR push 失败后重试和降级拒绝由临时真实 Git 仓库测试覆盖。没有为了验收而修改版本号。定时表达式已检查，未等待下一次定时触发。
 - 独立检出 AUR 公共 Git：master 为 `c019df8bcd8e181dafad79050e55783a4c1a0b0c`，只含三个配方文件，逐字节与 GitHub 一致。官方 RPC 返回 0.5.0-1、维护者 xianhongtao。
 
 未重跑干净 chroot、宿主机重新安装、真实数据库、嵌入模型或 ONNX 推理；历史报告不能视为本次结果。
