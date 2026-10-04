@@ -32,7 +32,7 @@ class SmokeTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             server = Path(temporary) / 'server.py'
             server.write_text(SERVER)
-            return subprocess.run([sys.executable, str(REPO / 'smoke-test.py'), *options, sys.executable, str(server)],
+            return subprocess.run([sys.executable, str(REPO / 'tests' / 'smoke-test.py'), *options, sys.executable, str(server)],
                                   env=dict(os.environ, TEST_MCP_VERSION=version, **env), text=True, capture_output=True, timeout=15)
 
     def test_default_version_and_additional_tool(self):

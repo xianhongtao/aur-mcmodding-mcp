@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Offline MCP test: python smoke-test.py [--expected-version VERSION] [command [args ...]]."""
+"""Offline MCP test: python tests/smoke-test.py [--expected-version VERSION] [command [args ...]]"""
 import argparse
 import json
 import os
@@ -15,7 +15,7 @@ parser.add_argument('command', nargs=argparse.REMAINDER)
 args = parser.parse_args()
 expected_version = args.expected_version
 if expected_version is None:
-    recipe = (Path(__file__).resolve().parent / 'PKGBUILD').read_text()
+    recipe = (Path(__file__).resolve().parents[1] / 'PKGBUILD').read_text()
     versions = re.findall(r'(?m)^pkgver=([^\n]+)$', recipe)
     if len(versions) != 1:
         parser.error('Cannot determine pkgver; pass --expected-version explicitly')

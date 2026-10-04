@@ -11,7 +11,6 @@ on:
       - PKGBUILD
       - .SRCINFO
       - xdg-cache.patch
-      - smoke-test.py
       - scripts/**
       - tests/**
       - .github/workflows/update-aur.yml
@@ -63,7 +62,7 @@ jobs:
           test "${#packages[@]}" -eq 1
           pacman -U --noconfirm "${packages[0]}" 2>&1 | tee local/ci/install.log
           runuser -u builder -- bash -euo pipefail -c '
-            python smoke-test.py 2>&1 | tee local/ci/smoke.log
+            python tests/smoke-test.py 2>&1 | tee local/ci/smoke.log
           '
           namcap PKGBUILD "${packages[0]}" 2>&1 | tee local/ci/namcap.log
           python scripts/validation.py namcap local/ci/namcap.log

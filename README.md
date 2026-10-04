@@ -26,7 +26,7 @@ declared and tested.
 | `scripts/validation.py` | Provenance manifest, namcap gate, `.SRCINFO` check, AUR RPC poll |
 | `scripts/publish-aur.sh`, `scripts/sync-aur.sh` | Publish to AUR / stage the three files in an AUR checkout |
 | `.github/workflows/update-aur.yml` | Scheduled and manual validation and publication |
-| `tests/`, `smoke-test.py` | Unit tests and an offline MCP handshake test |
+| `tests/` | Unit tests and `tests/smoke-test.py`, an offline MCP handshake test |
 | `artifacts/` | Kept locally, not tracked: the 2026-09-16 clean chroot build and `SHA256SUMS` |
 | `src/`, `pkg/`, downloaded sources | makepkg work and cache directories; keep them, not tracked |
 
@@ -50,7 +50,7 @@ tree. To test an installed or freshly built package:
 
 ```sh
 sudo pacman -U ./mcmodding-mcp-0.5.0-1-x86_64.pkg.tar.zst
-python smoke-test.py
+python tests/smoke-test.py
 ```
 
 The smoke test reads `pkgver` from `PKGBUILD` by default; pass `--expected-version VERSION` to
