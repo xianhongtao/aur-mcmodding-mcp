@@ -16,6 +16,3 @@
 /onnxruntime-*-ThirdPartyNotices.txt
 __pycache__/
 *.pyc
-
-# Keep repository maintenance instructions even with global ignore rules.
-!/AGENTS.md
